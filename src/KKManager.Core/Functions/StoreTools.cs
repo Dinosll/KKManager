@@ -12,11 +12,12 @@ namespace KKManager.Functions
     public static class StoreTools
     {
         private static CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private static DirectoryInfo _workingDirectory;
         public static void StoreUnsortedCards(bool debug)
         {
-            var selectedFolderPath = SelectUnsortedCardsPath();
-            Console.WriteLine("CatchPath:"+selectedFolderPath.FullName);
-            Parallel.ForEach(selectedFolderPath.EnumerateFiles("*.png", SearchOption.AllDirectories)
+            _workingDirectory = SelectUnsortedCardsPath();
+            Console.WriteLine("CatchPath:"+_workingDirectory.FullName);
+            Parallel.ForEach(_workingDirectory.EnumerateFiles("*.png", SearchOption.AllDirectories)
                 , new ParallelOptions { CancellationToken = _cancellationTokenSource.Token }
                 , file =>
                 {
@@ -32,13 +33,15 @@ namespace KKManager.Functions
                     }
                 });
 
-            Parallel.ForEach(selectedFolderPath.EnumerateFiles("*.zipmod", SearchOption.AllDirectories)
+            Parallel.ForEach(_workingDirectory.EnumerateFiles("*.zipmod", SearchOption.AllDirectories)
                 , new ParallelOptions { CancellationToken = _cancellationTokenSource.Token }
                 , file =>
                 {
                     //isAdditionMods
                     CopyModsToGameInstallFolder(file);
                 });
+
+            _workingDirectory = null;
         }
             
         public static DirectoryInfo SelectUnsortedCardsPath()
@@ -69,19 +72,24 @@ namespace KKManager.Functions
                         , "chara"
                         , "female"
                         , DateTime.Now.ToString(@"yyMMdd"));
-                    if (!Directory.Exists(charaFolderPath))
-                        Directory.CreateDirectory(charaFolderPath);
-                    destPath = Path.Combine(charaFolderPath, file.Name);
-                    
+                    destPath = Path.Combine(charaFolderPath, file.FullName.Replace(_workingDirectory.FullName,""));
                     break;
                 case CardType.KoikatuClothes:
                     var coordinateFolderPath=Path.Combine(gameInstallPath
                         , "UserData"
                         , "coordinate"
                         , DateTime.Now.ToString(@"yyMMdd"));
-                    if (!Directory.Exists(coordinateFolderPath))
-                        Directory.CreateDirectory(coordinateFolderPath);
-                    destPath = Path.Combine(coordinateFolderPath, file.Name);
+                    destPath = Path.Combine(coordinateFolderPath, file.FullName.Replace(_workingDirectory.FullName,""));
+                    break;
+                case CardType.KoikatuStudioScene:
+                    var sceneCardPath = Path.Combine(gameInstallPath
+                        , "UserData"
+                        , "studio"
+                        , "scene"
+                        , DateTime.Now.ToString("yyMMdd"));
+                    if (!Directory.Exists(sceneCardPath))
+                        Directory.CreateDirectory(sceneCardPath);
+                    destPath = Path.Combine(sceneCardPath, file.FullName.Replace(_workingDirectory.FullName, ""));
                     break;
                 default:
                     Console.WriteLine($"Don't Copy {card.Name}");
@@ -94,30 +102,15 @@ namespace KKManager.Functions
                 return;
             }
 
-            try
-            {
-                File.Copy(file.FullName, destPath);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("invalid destPath"+destPath);
-                throw;
-            }
+            CopyToPath(file,destPath);
         }
 
         private static void CopyFileToCustomFolder(FileInfo file)
         {
             var customPath = Path.Combine(Settings.Default.GamePath
                 ,DateTime.Now.ToString(@"yyMMdd")+"未分类");
-            if (!Directory.Exists(customPath))
-                Directory.CreateDirectory(customPath);
-            var destPath = Path.Combine(customPath, Path.GetFileName(file.Name));
-            if (File.Exists(destPath))
-            {
-                CopyFileToExistFloder(file);
-                return;
-            }
-            File.Copy(file.FullName, destPath);
+            var destPath = Path.Combine(customPath, file.FullName.Replace(_workingDirectory.FullName,""));
+            CopyToPath(file,destPath);
         }
         
         private static void CopyModsToGameInstallFolder(FileInfo file)
@@ -126,27 +119,34 @@ namespace KKManager.Functions
                 ,"mods"
                 ,"AdditionZipmod"
                 ,DateTime.Now.ToString(@"yyMMdd"));
-            if (!Directory.Exists(customPath))
-                Directory.CreateDirectory(customPath);
-            var destPath = Path.Combine(customPath, Path.GetFileName(file.Name));
-            if (File.Exists(destPath))
-            {
-                CopyFileToExistFloder(file);
-                return;
-            }
-            File.Copy(file.FullName, destPath);
+            var destPath = Path.Combine(customPath, file.FullName.Replace(_workingDirectory.FullName,""));
+            CopyToPath(file,destPath);
         }
 
         private static void CopyFileToExistFloder(FileInfo file)
         {
             var customPath = Path.Combine(Settings.Default.GamePath
                 ,DateTime.Now.ToString(@"yyMMdd")+"名称重复");
-            if (!Directory.Exists(customPath))
-                Directory.CreateDirectory(customPath);
-            var destPath = Path.Combine(customPath, Path.GetFileName(file.Name));
-            if (File.Exists(destPath))
-                destPath = Path.Combine(customPath,  Guid.NewGuid().ToString().Substring(0,8)+"_"+Path.GetFileName(file.Name));
-            File.Copy(file.FullName, destPath);
+            var destPath = Path.Combine(customPath, file.FullName.Replace(_workingDirectory.FullName,""));
+            CopyToPath(file,destPath);
+        }
+
+        private static void CopyToPath(FileInfo file, string destPath)
+        {
+            
+            try
+            {
+                var destDirectoryPath = Path.GetDirectoryName(destPath);
+                if(destDirectoryPath!=string.Empty && !Directory.Exists(destDirectoryPath))
+                    Directory.CreateDirectory(destDirectoryPath);
+                File.Copy(file.FullName, destPath);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Path:{destPath} not valid");
+                throw;
+            }
         }
     }
 }
