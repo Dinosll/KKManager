@@ -201,6 +201,9 @@
   <data name="cleanUpDuplicateZipmodsToolStripMenuItem.Text" xml:space="preserve">
     <value>Очистить дубликаты модов</value>
   </data>
+  <data name="storeUnsortedCardsToolStripMenuItem.Text" xml:space="preserve">
+    <value>Сортировка карт</value>
+  </data>
   <data name="openModpackToolToolStripMenuItem.Text" xml:space="preserve">
     <value>Открыть ModpackTool</value>
   </data>
