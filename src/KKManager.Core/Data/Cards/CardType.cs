@@ -16,5 +16,7 @@
         KoikatuClothes,
         AiSyoujyoClothes,
         SamabakeScrambleClothes,
+        
+        KoikatuStudioScene,
     }
 }

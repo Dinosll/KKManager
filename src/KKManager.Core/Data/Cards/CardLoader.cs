@@ -275,6 +275,10 @@ namespace KKManager.Data.Cards
                     return CardType.SamabakeScrambleClothes;
 
                 default:
+                    if (marker.Contains("1.0."))
+                    {
+                        return CardType.KoikatuStudioScene;
+                    }
                     if (throwOnUnknown)
                         throw new ArgumentOutOfRangeException($"Unknown game tag: {PathTools.SanitizeFileName(marker.Left(20))}");
                     else
