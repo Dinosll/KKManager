@@ -143,4 +143,7 @@
     <value>Неизвестно</value>
     <comment>Shown in lists when the value is unknown (e.g. unknown date, unknown file size)</comment>
   </data>
+  <data name="SelectUnstoredFolderTip" xml:space="preserve">
+    <value>Copy the uncategorized files (character cards, zipmod) in the folder to the corresponding directory of the game</value>
+  </data>
 </root>

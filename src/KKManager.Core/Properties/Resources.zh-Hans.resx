@@ -151,4 +151,7 @@
   <data name="OpenGameLogMessageTitle" xml:space="preserve">
     <value>打开日志文件</value>
   </data>
+  <data name="SelectUnstoredFolderTip" xml:space="preserve">
+    <value>将文件夹内的未分类文件（角色卡，zipmod）拷贝到游戏的对应目录</value>
+  </data>
 </root>

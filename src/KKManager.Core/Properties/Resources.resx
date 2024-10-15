@@ -153,4 +153,7 @@ Try setting 'redirectOutputLog=true' in doorstop_config.ini, and if that doesn't
   <data name="OpenGameLogMessageTitle" xml:space="preserve">
     <value>Open log file</value>
   </data>
+  <data name="SelectUnstoredFolderTip" xml:space="preserve">
+    <value>Copy the uncategorized files (character cards, zipmod) in the folder to the corresponding directory of the game</value>
+  </data>
 </root>

@@ -16,6 +16,11 @@ namespace KKManager.Functions
         public static void StoreUnsortedCards(bool debug)
         {
             _workingDirectory = SelectUnsortedCardsPath();
+            if (_workingDirectory == null)
+            {
+                Console.WriteLine("Cancel sort cards");
+                return;
+            }
             Console.WriteLine("CatchPath:"+_workingDirectory.FullName);
             Parallel.ForEach(_workingDirectory.EnumerateFiles("*.png", SearchOption.AllDirectories)
                 , new ParallelOptions { CancellationToken = _cancellationTokenSource.Token }
@@ -46,17 +51,22 @@ namespace KKManager.Functions
             
         public static DirectoryInfo SelectUnsortedCardsPath()
         {
-            MessageBox.Show("Select Unsorted CardsFolder"
-                ,"Select Unsorted Cards Folder"
-                ,MessageBoxButtons.OK, MessageBoxIcon.Error);
-            using (var d = new FolderBrowserDialog())
+            var result = MessageBox.Show(string.Format(Resources.SelectUnstoredFolderTip),"Select Folder"
+                ,MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (result == DialogResult.OK)
             {
-                if (d.ShowDialog() == DialogResult.OK)
+                using (var d = new FolderBrowserDialog())
                 {
-                    return new DirectoryInfo(d.SelectedPath);
-                }
-                return null;
-            }   
+                    if (d.ShowDialog() == DialogResult.OK)
+                    {
+                        if(MessageBox.Show($"Select {d.SelectedPath}?"
+                               ,"Confirm",MessageBoxButtons.OKCancel,MessageBoxIcon.Warning)==DialogResult.OK)
+                            return new DirectoryInfo(d.SelectedPath);
+                    }
+                }   
+            }
+
+            return null;
         }
 
         private static void CopyCardsToGameInstallFolder(Card card,FileInfo file)
@@ -67,32 +77,16 @@ namespace KKManager.Functions
             {
                 case CardType.Koikatu:
                 case CardType.KoikatsuSunshine://SameAsKoikatu
-                    var charaFolderPath=Path.Combine(gameInstallPath
-                        , "UserData"
-                        , "chara"
-                        , "female"
-                        , DateTime.Now.ToString(@"yyMMdd"));
-                    destPath = Path.Combine(charaFolderPath, file.FullName.Replace(_workingDirectory.FullName,""));
+                    destPath = GetSavePath(SortFileType.KoikatuCharaCard, file.FullName);
                     break;
                 case CardType.KoikatuClothes:
-                    var coordinateFolderPath=Path.Combine(gameInstallPath
-                        , "UserData"
-                        , "coordinate"
-                        , DateTime.Now.ToString(@"yyMMdd"));
-                    destPath = Path.Combine(coordinateFolderPath, file.FullName.Replace(_workingDirectory.FullName,""));
+                    destPath = GetSavePath(SortFileType.KoikatuCoordinateCard, file.FullName);
                     break;
                 case CardType.KoikatuStudioScene:
-                    var sceneCardPath = Path.Combine(gameInstallPath
-                        , "UserData"
-                        , "studio"
-                        , "scene"
-                        , DateTime.Now.ToString("yyMMdd"));
-                    if (!Directory.Exists(sceneCardPath))
-                        Directory.CreateDirectory(sceneCardPath);
-                    destPath = Path.Combine(sceneCardPath, file.FullName.Replace(_workingDirectory.FullName, ""));
+                    destPath = GetSavePath(SortFileType.KoikatuStudioSceneCard,file.FullName);
                     break;
                 default:
-                    Console.WriteLine($"Don't Copy {card.Name}");
+                    Console.WriteLine($"Unknow GameType {card.Type},Don't Copy {card.Name}");
                     return;
             }
 
@@ -107,27 +101,19 @@ namespace KKManager.Functions
 
         private static void CopyFileToCustomFolder(FileInfo file)
         {
-            var customPath = Path.Combine(Settings.Default.GamePath
-                ,DateTime.Now.ToString(@"yyMMdd")+"未分类");
-            var destPath = Path.Combine(customPath, file.FullName.Replace(_workingDirectory.FullName,""));
+            var destPath=GetSavePath(SortFileType.UnknownTypeCard,file.FullName);
             CopyToPath(file,destPath);
         }
         
         private static void CopyModsToGameInstallFolder(FileInfo file)
         {
-            var customPath = Path.Combine(Settings.Default.GamePath
-                ,"mods"
-                ,"AdditionZipmod"
-                ,DateTime.Now.ToString(@"yyMMdd"));
-            var destPath = Path.Combine(customPath, file.FullName.Replace(_workingDirectory.FullName,""));
+            var destPath = GetSavePath(SortFileType.AdditionMod,file.FullName);
             CopyToPath(file,destPath);
         }
 
         private static void CopyFileToExistFloder(FileInfo file)
         {
-            var customPath = Path.Combine(Settings.Default.GamePath
-                ,DateTime.Now.ToString(@"yyMMdd")+"名称重复");
-            var destPath = Path.Combine(customPath, file.FullName.Replace(_workingDirectory.FullName,""));
+            var destPath = GetSavePath(SortFileType.ExistSameFile,file.FullName);
             CopyToPath(file,destPath);
         }
 
@@ -148,5 +134,62 @@ namespace KKManager.Functions
                 throw;
             }
         }
+
+        private static string GetSavePath(SortFileType type, string fileFullPath)
+        {
+            var fileRelativePath = fileFullPath.Replace(_workingDirectory.FullName, "");
+            var customPath = Path.Combine(Settings.Default.GamePath
+                ,DateTime.Now.ToString(@"yyMMdd")+"-UnknownTypeFiles");
+            switch (type)
+            {
+                case SortFileType.KoikatuCharaCard:
+                    customPath=Path.Combine(Settings.Default.GamePath
+                        , "UserData"
+                        , "chara"
+                        , "female"
+                        , DateTime.Now.ToString(@"yyMMdd"));
+                    break;
+                case SortFileType.KoikatuCoordinateCard:
+                    customPath=Path.Combine(Settings.Default.GamePath
+                        , "UserData"
+                        , "coordinate"
+                        , DateTime.Now.ToString(@"yyMMdd"));
+                    break;
+                case SortFileType.KoikatuStudioSceneCard:
+                    customPath = Path.Combine(Settings.Default.GamePath
+                        , "UserData"
+                        , "studio"
+                        , "scene"
+                        , DateTime.Now.ToString("yyMMdd"));
+                    break;
+                case SortFileType.UnknownTypeCard:
+                    customPath = Path.Combine(Settings.Default.GamePath
+                        , DateTime.Now.ToString("yyMMdd"))+"_UnknownFileType";
+                    break;
+                case SortFileType.AdditionMod:
+                    customPath = Path.Combine(Settings.Default.GamePath
+                        , "mods"
+                        , "AdditionZipmod"
+                        , DateTime.Now.ToString("yyMMdd"));
+                    break;
+                case SortFileType.ExistSameFile:
+                    customPath = Path.Combine(Settings.Default.GamePath
+                        , DateTime.Now.ToString("yyMMdd"))+"_ExistSameFile";
+                    break;
+            }
+
+            return customPath + fileRelativePath;
+        }
+    }
+
+    public enum SortFileType
+    {
+        None,
+        KoikatuCharaCard,
+        KoikatuCoordinateCard,
+        KoikatuStudioSceneCard,
+        UnknownTypeCard,
+        AdditionMod,
+        ExistSameFile,
     }
 }

@@ -8,6 +8,12 @@ namespace KKManager.Data.Cards
 {
     public static class Utility
     {
+        /// <summary>
+        /// Search bytes from stream 
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="sequence"></param>
+        /// <returns>bytes start index,-1 if not found</returns>
         public static long SearchForSequence(Stream stream, byte[] sequence)
         {
             const int bufferSize = 4096;
@@ -31,11 +37,13 @@ namespace KKManager.Data.Cards
                     {
                         i++;
 
-                        if (i >= bufferSize)
+                        if (i >= read)
                         {
-                            if ((read = stream.Read(buffer, 0, bufferSize)) < bufferSize)
-                                return -1;
-
+                            // if ((read = stream.Read(buffer, 0, bufferSize)) < bufferSize)
+                            //     return -1;
+                            //
+                            // i = 0;
+                            read=stream.Read(buffer, 0, bufferSize);
                             i = 0;
                         }
 
@@ -48,7 +56,7 @@ namespace KKManager.Data.Cards
 
                     if (flag)
                     {
-                        var result = (stream.Position + 1) - (bufferSize - i) - sequence.Length;
+                        var result = (stream.Position + 1) - (read - i) - sequence.Length;
                         stream.Position = origPos;
                         return result;
                     }

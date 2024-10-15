@@ -11,6 +11,7 @@ using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using KKManager.Controls;
 using KKManager.Data.Cards.AI;
 using KKManager.Data.Cards.EC;
 using KKManager.Data.Cards.HC;
@@ -151,6 +152,13 @@ namespace KKManager.Data.Cards
             {
                 var pngEnd = Utility.SearchForPngEnd(stream);
 
+                if (pngEnd == stream.Length)
+                {
+                    Console.WriteLine($"{file.FullName} is normal PNG file, skip.");
+                    return null;
+                }
+                    
+                
                 if (pngEnd == -1 || pngEnd >= stream.Length)
                     return null;
 
@@ -232,7 +240,7 @@ namespace KKManager.Data.Cards
                 }
                 catch (EndOfStreamException e)
                 {
-                    throw new IOException("The card is corrupted or in an unknown format", e);
+                    throw new IOException("The card is corrupted or is not Illusion game file format", e);
                 }
             }
         }
